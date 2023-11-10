@@ -2,7 +2,7 @@ name 'crystal'
 maintainer 'Juan Wajnerman'
 homepage 'http://crystal-lang.org/'
 
-install_dir '/opt/crystal'
+install_dir '/Users/miry/tmp/crystal'
 build_version do
   source :version, from_dependency: 'crystal'
 end

@@ -13,7 +13,7 @@ clean:
 
 .PHONY: setup
 omnibus_setup:
-	cd omnibus && bundle install
+	cd omnibus && bundle install --binstubs --path vendor/bundler
 	
 
 .PHONY: darwin

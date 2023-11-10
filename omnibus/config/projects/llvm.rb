@@ -2,7 +2,7 @@ name 'llvm'
 maintainer 'Juan Wajnerman'
 homepage 'http://llvm.org/'
 
-install_dir '/opt/llvm'
+install_dir '/Users/miry/tmp/llvm'
 build_version do
   source :version, from_dependency: 'llvm'
 end

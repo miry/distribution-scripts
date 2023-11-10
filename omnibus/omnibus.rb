@@ -22,7 +22,7 @@ base_dir './local'
 # Alternatively you can tune the individual values
 # ------------------------------------------------
 # cache_dir     './local/omnibus/cache'
-# git_cache_dir './local/omnibus/cache/install_path'
+# git_cache_dir './local/omnibus/cache/<install_path>'
 # source_dir    './local/omnibus/src'
 # build_dir     './local/omnibus/build'
 # package_dir   './local/omnibus/pkg'
@@ -50,3 +50,5 @@ build_retries 0
 # local_software_dirs ['/path/to/local/software']
 
 append_timestamp false
+
+use_git_caching true

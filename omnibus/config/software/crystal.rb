@@ -39,8 +39,10 @@ else
   env["PATH"] = "#{llvm_bin.project_dir}/bin:#{project_dir}/deps:#{env["PATH"]}"
 end
 
+# raise Omnibus::Config.cache_dir.inspect
+
 if macos? || mac_os_x?
-  env["CRYSTAL_PATH"] = "lib:/private/var/cache/omnibus/src/crystal/src"
+  env["CRYSTAL_PATH"] = "lib:#{Omnibus::Config.cache_dir}:/private/var/cache/omnibus/src/crystal/src"
 else
   env["CRYSTAL_PATH"] = "lib:#{project_dir}/src"
 end
