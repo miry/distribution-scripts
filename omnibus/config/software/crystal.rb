@@ -44,6 +44,9 @@ end
 build do
   command "git checkout #{CRYSTAL_SHA1}", cwd: project_dir
 
+  original_CXXFLAGS_env = env["CXXFLAGS"].dup
+  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
+
   mkdir "#{project_dir}/deps"
   make "deps", env: env
   mkdir ".build"
@@ -69,7 +72,7 @@ build do
 
   # Compile for ARM64. Apple's clang only understands arm64, LLVM uses aarch64,
   # so we need to sub out aarch64 in our calls to Apple tools
-  env["CXXFLAGS"] << " -target arm64-apple-darwin"
+  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target arm64-apple-darwin"
   make "deps", env: env
 
   make "crystal stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
