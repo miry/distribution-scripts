@@ -11,6 +11,7 @@ test:
 clean:
 	rm -fr test-log
 
+# https://github.com/chef/omnibus
 .PHONY: setup
 omnibus_setup:
 	cd omnibus && bundle install --binstubs --path vendor/bundler

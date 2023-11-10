@@ -1,17 +1,11 @@
 CRYSTAL_VERSION = ENV['CRYSTAL_VERSION']
 CRYSTAL_SHA1 = ENV['CRYSTAL_SHA1']
 FIRST_RUN = ENV["FIRST_RUN"]
-CRYSTAL_SRC = (ENV['CRYSTAL_SRC'] || "").strip
+CRYSTAL_SRC = ENV.fetch('CRYSTAL_SRC', 'https://github.com/crystal-lang/crystal')
 
 name "crystal"
 default_version CRYSTAL_VERSION
 skip_transitive_dependency_licensing true
-
-if CRYSTAL_SRC.empty?
-  source git: "https://github.com/crystal-lang/crystal"
-else
-  source git: CRYSTAL_SRC
-end
 
 dependency "pcre2"
 dependency "bdw-gc"
@@ -20,7 +14,7 @@ dependency "libevent"
 dependency "libffi"
 
 env = with_standard_compiler_flags(with_embedded_path(
-  "LIBRARY_PATH" => "#{install_dir}/embedded/lib",
+  "LIBRARY_PATH" => "#{install_dir}/embedded/lib:/opt/homebrew/lib",
   "CRYSTAL_LIBRARY_PATH" => "#{install_dir}/embedded/lib",
 ))
 env["CFLAGS"] << " -fPIC -arch arm64 -arch x86_64"
@@ -33,16 +27,16 @@ end
 output_path = "#{install_dir}/embedded/bin"
 output_bin = "#{output_path}/crystal"
 
-if FIRST_RUN
-  env["PATH"] = "#{project_dir}/deps:#{env["PATH"]}"
-else
-  env["PATH"] = "#{llvm_bin.project_dir}/bin:#{project_dir}/deps:#{env["PATH"]}"
+path_env = "#{project_dir}/deps:#{env["PATH"]}"
+unless FIRST_RUN
+  path_env = "#{llvm_bin.project_dir}/bin:#{path_env}"
 end
+env["PATH"] = path_env
 
 # raise Omnibus::Config.cache_dir.inspect
 
 if macos? || mac_os_x?
-  env["CRYSTAL_PATH"] = "lib:#{Omnibus::Config.cache_dir}:/private/var/cache/omnibus/src/crystal/src"
+  env["CRYSTAL_PATH"] = "lib:/private/var/cache/omnibus/src/crystal/src:/Users/miry/src/crystal/distribution-scripts/omnibus/local/src/crystal/src"
 else
   env["CRYSTAL_PATH"] = "lib:#{project_dir}/src"
 end
@@ -60,8 +54,11 @@ build do
   copy "#{Dir.pwd}/crystal-#{ohai['os']}-#{ohai['kernel']['machine']}/embedded/bin/crystal", ".build/crystal"
 
   # Compile for Intel
-  command "make crystal stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
+  command "make crystal target=x86_64-apple-darwin stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
   move output_bin, "#{output_bin}_x86_64"
+  block {raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64")}
+  command "file #{output_bin}_x86_64", env: env
+
 
   # Clean up
   make "clean_cache clean", env: env
@@ -78,6 +75,8 @@ build do
   make "crystal stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
 
   command "clang #{output_path}/crystal.o -o #{output_bin}_arm64 -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
+  block {raise "Could not build crystal arm64" unless File.exist?("#{output_bin}_arm64")}
+  command "file #{output_bin}_arm64", env: env
   delete "#{output_path}/crystal.o"
 
   # Lipo them up

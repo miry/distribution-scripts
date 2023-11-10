@@ -50,5 +50,3 @@ build_retries 0
 # local_software_dirs ['/path/to/local/software']
 
 append_timestamp false
-
-use_git_caching true
