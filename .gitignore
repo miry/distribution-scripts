@@ -4,6 +4,7 @@ omnibus/bin
 omnibus/crystal-darwin-*
 omnibus/shards-darwin-*
 omnibus/vendor
+omnibus/local
 
 docs/build/
 
