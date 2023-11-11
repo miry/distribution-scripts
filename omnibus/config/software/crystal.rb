@@ -55,21 +55,34 @@ build do
   crflags = "--no-debug"
   copy "#{Dir.pwd}/crystal-#{ohai['os']}-#{ohai['kernel']['machine']}/embedded/bin/crystal", ".build/crystal"
 
-  # Compile for Intel
-  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
-  command "make crystal target=x86_64-apple-darwin stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env.dup
-  move output_bin, "#{output_bin}_x86_64"
-  block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
-  command "file #{output_bin}_x86_64", env: env
-
-
-  # Clean up
-  make "clean_cache clean", env: env
+#   # Compile for Intel
+#   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
+#   command "make crystal target=x86_64-apple-darwin stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env.dup
+#   move output_bin, "#{output_bin}_x86_64"
+#   # block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
+#   command "file #{output_bin}_x86_64", env: env
+# 
+#   # Clean up
+#   make "clean_cache clean", env: env
 
   # Restore x86_64 compiler w/ cross-compile support
   mkdir ".build"
   copy "#{output_bin}_x86_64", ".build/crystal"
 
+  # Custom x86
+  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
+  env["CC"] = "-v -target x86_64-apple-darwin"
+  make "deps", env: env.dup
+
+  make "crystal stats=true release=true target=x86_64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
+
+  command "clang #{output_path}/crystal.o -o #{output_bin}_x86_64 -target x86_64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
+  block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
+  command "file #{output_bin}_x86_64", env: env
+  delete "#{output_path}/crystal.o"
+  # Clean up
+  make "clean_cache clean", env: env
+  
   # Compile for ARM64. Apple's clang only understands arm64, LLVM uses aarch64,
   # so we need to sub out aarch64 in our calls to Apple tools
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target arm64-apple-darwin"
