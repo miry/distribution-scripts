@@ -10,6 +10,9 @@ test:
 .PHONY: clean
 clean:
 	rm -fr test-log
+	rm -fr omnibus/local
+	rm -fr omnibus/crystal-*
+	rm -fr ~/tmp
 
 # https://github.com/chef/omnibus
 .PHONY: setup

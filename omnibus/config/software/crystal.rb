@@ -44,22 +44,22 @@ end
 build do
   command "git checkout #{CRYSTAL_SHA1}", cwd: project_dir
 
-  original_CXXFLAGS_env = env["CXXFLAGS"].dup
-  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
-
   mkdir "#{project_dir}/deps"
   make "deps", env: env
   mkdir ".build"
-  command "echo #{Dir.pwd}", env: env
+
+  original_CXXFLAGS_env = env["CXXFLAGS"].dup
+  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
+  command "echo #{Dir.pwd}", env: env.dup
 
   crflags = "--no-debug"
-
   copy "#{Dir.pwd}/crystal-#{ohai['os']}-#{ohai['kernel']['machine']}/embedded/bin/crystal", ".build/crystal"
 
   # Compile for Intel
-  command "make crystal target=x86_64-apple-darwin stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
+  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
+  command "make crystal target=x86_64-apple-darwin stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env.dup
   move output_bin, "#{output_bin}_x86_64"
-  block {raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64")}
+  block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
   command "file #{output_bin}_x86_64", env: env
 
 
@@ -73,12 +73,12 @@ build do
   # Compile for ARM64. Apple's clang only understands arm64, LLVM uses aarch64,
   # so we need to sub out aarch64 in our calls to Apple tools
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target arm64-apple-darwin"
-  make "deps", env: env
+  make "deps", env: env.dup
 
   make "crystal stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
 
   command "clang #{output_path}/crystal.o -o #{output_bin}_arm64 -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
-  block {raise "Could not build crystal arm64" unless File.exist?("#{output_bin}_arm64")}
+  block { raise "Could not build crystal arm64" unless File.exist?("#{output_bin}_arm64") }
   command "file #{output_bin}_arm64", env: env
   delete "#{output_path}/crystal.o"
 
