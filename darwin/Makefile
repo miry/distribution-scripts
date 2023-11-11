@@ -75,6 +75,6 @@ clean: ## Clean up build directory
 	rm -Rf $(CURDIR)/tmp
 	rm -Rf $(CURDIR)/../omnibus/pkg/crystal-*
 	rm -Rf $(CURDIR)/../omnibus/pkg/version-*
-	rm -Rf $(CURDIR)/../omnibus/crystal-darwin-*
+	rm -Rf $(CURDIR)/../omnibus/crystal-darwin*
 	rm -Rf /var/cache/omnibus/*
 	rm -Rf /opt/crystal/*

@@ -13,6 +13,7 @@ clean:
 	rm -fr omnibus/local
 	rm -fr omnibus/crystal-*
 	rm -fr ~/tmp
+	make -C darwin clean
 
 # https://github.com/chef/omnibus
 .PHONY: setup
@@ -22,4 +23,4 @@ omnibus_setup:
 
 .PHONY: darwin
 darwin: omnibus_setup
-	make -C darwin CRYSTAL_VERSION=1.10.1 PREVIOUS_CRYSTAL_RELEASE_DARWIN_TARGZ=https://github.com/crystal-lang/crystal/releases/download/1.10.1/crystal-1.10.1-1-darwin-universal.tar.gz
+	make -C darwin CRYSTAL_SRC=../crystal/.git CRYSTAL_VERSION=1.10.1 PREVIOUS_CRYSTAL_RELEASE_DARWIN_TARGZ=https://github.com/crystal-lang/crystal/releases/download/1.10.1/crystal-1.10.1-1-darwin-universal.tar.gz
