@@ -21,7 +21,7 @@ DARWIN_PKG_NAME = $(DARWIN_PREFIX).$(DARWIN_ARCH).pkg
 DARWIN_PKG_NAME_UNIVERSAL = $(DARWIN_PREFIX).universal.pkg
 
 .PHONY: all
-all: darwin-previous $(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME) ## Build compressed omnibus and distribution packages [default]
+all: darwin-previous $(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL) ## Build compressed omnibus and distribution packages [default]
 
 .PHONY: help
 help: ## Show this help
