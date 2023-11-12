@@ -17,7 +17,7 @@ build_dmg false
 #
 # Uncomment this line to change the default base directory to "local"
 # -------------------------------------------------------------------
-base_dir './local'
+base_dir '/Users/miry/tmp/local'
 #
 # Alternatively you can tune the individual values
 # ------------------------------------------------

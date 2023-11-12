@@ -65,7 +65,7 @@ endif
 	&& export MACOSX_DEPLOYMENT_TARGET=11.0 \
 	&& export SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 	&& bundle exec omnibus clean crystal shards \
-	&& bundle exec omnibus build crystal \
+	&& bundle exec omnibus build crystal --log-level debug \
 	&& cp ./pkg/$(DARWIN_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(subst x86_64,universal,$(DARWIN_NAME)) \
 	&& cp ./pkg/$(DARWIN_PKG_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(subst x86_64,universal,$(DARWIN_PKG_NAME))
 

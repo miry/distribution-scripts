@@ -7,6 +7,8 @@ name "crystal"
 default_version CRYSTAL_VERSION
 skip_transitive_dependency_licensing true
 
+source git: CRYSTAL_SRC
+
 dependency "pcre2"
 dependency "bdw-gc"
 dependency "llvm_bin" unless FIRST_RUN
@@ -14,7 +16,7 @@ dependency "libevent"
 dependency "libffi"
 
 env = with_standard_compiler_flags(with_embedded_path(
-  "LIBRARY_PATH" => "#{install_dir}/embedded/lib:/opt/homebrew/lib",
+  "LIBRARY_PATH" => "#{install_dir}/embedded/lib",
   "CRYSTAL_LIBRARY_PATH" => "#{install_dir}/embedded/lib",
 ))
 env["CFLAGS"] << " -fPIC -arch arm64 -arch x86_64"
@@ -36,59 +38,77 @@ env["PATH"] = path_env
 # raise Omnibus::Config.cache_dir.inspect
 
 if macos? || mac_os_x?
-  env["CRYSTAL_PATH"] = "lib:/private/var/cache/omnibus/src/crystal/src:/Users/miry/src/crystal/distribution-scripts/omnibus/local/src/crystal/src"
+  env["CRYSTAL_PATH"] = "lib:/private/var/cache/omnibus/src/crystal/src:#{project_dir}/src"
 else
   env["CRYSTAL_PATH"] = "lib:#{project_dir}/src"
 end
 
 build do
-  command "git checkout #{CRYSTAL_SHA1}", cwd: project_dir
+  block { puts "\n=== Starting build phase for crystal from #{Dir.pwd} ===\n\n" }
+  command "echo '    Sources are located in #{project_dir}'", env: env.dup
 
+  command "git checkout '#{CRYSTAL_SHA1}'", cwd: project_dir
+
+  block { puts "\n=== Build crystal deps in #{project_dir}\n\n" }
   mkdir "#{project_dir}/deps"
-  make "deps", env: env
+  make "deps", env: env.dup
   mkdir ".build"
+
+  block { puts "\n=== Build native crystal bin with embedded universal crystal binary\n\n" }
+  copy "#{Dir.pwd}/crystal-#{ohai['os']}/embedded/bin/crystal", ".build/crystal"
+  command ".build/crystal --version", env: env.dup
+  command "file .build/crystal", env: env.dup
+
+  # Compile native
+  crflags = "--no-debug"
+  command "make crystal stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env.dup
+  block "Testing the result file" do
+    puts "===> Testing the result file #{output_bin}"
+    raise "Could not build native crystal: #{output_bin}" unless File.exist?("#{output_bin}")
+  end
+  command "file #{output_bin}", env: env.dup
+
+  block { puts "\n\n=== Restore compiler with cross-compile support ===\n\n" }
+  # Restore compiler w/ cross-compile support
+  move "#{output_bin}", ".build/crystal"
+  command ".build/crystal --version", env: env.dup
+  
+
+  block { puts "\n\n=== Building x86_64 version ===\n\n" }
 
   original_CXXFLAGS_env = env["CXXFLAGS"].dup
+  original_LDFLAGS_env = env["LDFLAGS"].dup
+
+  # x86_64 build
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
-  command "echo #{Dir.pwd}", env: env.dup
-
-  crflags = "--no-debug"
-  copy "#{Dir.pwd}/crystal-#{ohai['os']}-#{ohai['kernel']['machine']}/embedded/bin/crystal", ".build/crystal"
-
-#   # Compile for Intel
-#   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
-#   command "make crystal target=x86_64-apple-darwin stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env.dup
-#   move output_bin, "#{output_bin}_x86_64"
-#   # block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
-#   command "file #{output_bin}_x86_64", env: env
-# 
-#   # Clean up
-#   make "clean_cache clean", env: env
-
-  # Restore x86_64 compiler w/ cross-compile support
-  mkdir ".build"
-  copy "#{output_bin}_x86_64", ".build/crystal"
-
-  # Custom x86
-  env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
-  env["CC"] = "-v -target x86_64-apple-darwin"
+  env["LDFLAGS"] = original_LDFLAGS_env + " -v -target x86_64-apple-darwin"
+  env["LDLIBS"] = "-v -target x86_64-apple-darwin"
   make "deps", env: env.dup
 
-  make "crystal stats=true release=true target=x86_64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
+  make "crystal verbose=true stats=true release=true target=x86_64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
 
   command "clang #{output_path}/crystal.o -o #{output_bin}_x86_64 -target x86_64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
   block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
   command "file #{output_bin}_x86_64", env: env
   delete "#{output_path}/crystal.o"
+
+  # Restore x86_64 compiler w/ cross-compile support
+  mkdir ".build"
+  copy "#{output_bin}_x86_64", ".build/crystal"
+
   # Clean up
   make "clean_cache clean", env: env
+
+  block { puts "\n\n=== Building arm64 version ===\n\n" }
   
   # Compile for ARM64. Apple's clang only understands arm64, LLVM uses aarch64,
   # so we need to sub out aarch64 in our calls to Apple tools
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target arm64-apple-darwin"
+  env["LDFLAGS"] = original_LDFLAGS_env + " -v -target arm64-apple-darwin"
+  env["LDLIBS"] = "-v -target x86_64-apple-darwin"
   make "deps", env: env.dup
 
-  make "crystal stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
+  make "crystal verbose=true stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
 
   command "clang #{output_path}/crystal.o -o #{output_bin}_arm64 -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
   block { raise "Could not build crystal arm64" unless File.exist?("#{output_bin}_arm64") }
@@ -96,6 +116,7 @@ build do
   delete "#{output_path}/crystal.o"
 
   # Lipo them up
+  block { puts "\n\n=== Combine x86_64 and arm64 binaries in single universal binary ===\n\n" }
   command "lipo -create -output #{output_bin} #{output_bin}_x86_64 #{output_bin}_arm64"
   delete "#{output_bin}_x86_64"
   delete "#{output_bin}_arm64"
