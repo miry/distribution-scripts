@@ -1,8 +1,8 @@
 omnibus/pkg/
-omnibus/.bundle
-omnibus/bin
 omnibus/crystal-darwin*
+omnibus/.bundle
 omnibus/vendor
+omnibus/bin
 
 docs/build/
 
