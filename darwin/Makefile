@@ -17,7 +17,9 @@ OUTPUT_DIR = build
 DARWIN_ARCH = $(shell uname -m)
 DARWIN_PREFIX = crystal-$(CRYSTAL_VERSION)-$(PACKAGE_ITERATION)
 DARWIN_NAME = $(DARWIN_PREFIX)-darwin-$(DARWIN_ARCH).tar.gz
+DARWIN_NAME_UNIVERSAL = $(DARWIN_PREFIX)-darwin-universal.tar.gz
 DARWIN_PKG_NAME = $(DARWIN_PREFIX).$(DARWIN_ARCH).pkg
+DARWIN_PKG_NAME_UNIVERSAL = $(DARWIN_PREFIX).universal.pkg
 
 .PHONY: all
 all: darwin-previous $(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME) ## Build compressed omnibus and distribution packages [default]
@@ -42,7 +44,6 @@ awk 'BEGIN {FS = "## "}; /^## [a-zA-Z_-]/ {printf "  \033[36m%s\033[0m\n", $$2};
 .PHONY: darwin-previous
 darwin-previous: $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal ## download previous crystal darwin release
 
-# Once there are prior builds for arm64, this can use DARWIN_ARCH
 $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal:
 	curl -L -o /tmp/crystal-darwin.tar.gz $(PREVIOUS_CRYSTAL_RELEASE_DARWIN_TARGZ) \
 	&& mkdir -p $(CURDIR)/../omnibus/crystal-darwin \
@@ -50,7 +51,7 @@ $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal:
 	&& rm /tmp/crystal-darwin.tar.gz \
 	&& chmod +x $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal
 
-$(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME): ## Build omnibus crystal project
+$(OUTPUT_DIR)/$(DARWIN_NAME_UNIVERSAL) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL): ## Build omnibus crystal project
 ifeq ($(FORCE_GIT_TAGGED), 0)
 	rm -Rf $(CURDIR)/tmp && mkdir -p $(CURDIR)/tmp && cd $(CURDIR)/tmp \
 	&& git clone "$(CRYSTAL_REPO)" \
@@ -66,8 +67,8 @@ endif
 	&& export SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 	&& bundle exec omnibus clean crystal shards \
 	&& bundle exec omnibus build crystal --log-level debug \
-	&& cp ./pkg/$(DARWIN_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(subst x86_64,universal,$(DARWIN_NAME)) \
-	&& cp ./pkg/$(DARWIN_PKG_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(subst x86_64,universal,$(DARWIN_PKG_NAME))
+	&& cp ./pkg/$(DARWIN_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(DARWIN_NAME_UNIVERSAL) \
+	&& cp ./pkg/$(DARWIN_PKG_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL)
 
 .PHONY: clean
 clean: ## Clean up build directory
