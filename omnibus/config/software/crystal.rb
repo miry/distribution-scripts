@@ -75,6 +75,9 @@ build do
   move "#{output_bin}", ".build/crystal"
   command ".build/crystal --version", env: env.dup
 
+  # Clean up
+  make "clean_cache clean", env: env
+
   block { puts "\n===== 3. Building crystal x86_64 version\n\n" }
 
   original_CXXFLAGS_env = env["CXXFLAGS"].dup
@@ -88,7 +91,7 @@ build do
 
   make "crystal verbose=true stats=true release=true target=x86_64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
   command "clang #{output_path}/crystal.o -o #{output_bin_x86_64} -target x86_64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
-  
+
   # Assertion
   block { raise "Could not build #{output_bin_x86_64}" unless File.exist?(output_bin_x86_64) }
   command "file #{output_bin_x86_64}", env: env
@@ -108,11 +111,11 @@ build do
   make "deps", env: env.dup
   make "crystal verbose=true stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
   command "clang #{output_path}/crystal.o -o #{output_bin_arm} -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
-  
+
   # Assertion
   block { raise "Could not build #{output_bin_arm}" unless File.exist?(output_bin_arm) }
   command "file #{output_bin_arm}", env: env
-  
+
   # Clean up
   delete "#{output_path}/crystal.o"
 
@@ -126,10 +129,11 @@ build do
   end
   # TODO: Add validation of command output
   command "file #{output_bin}", env: env.dup
-  
+
   # Clean up
   delete output_bin_x86_64
   delete output_bin_arm
+  make "clean_cache clean", env: env
 
   block do
     if macos? || mac_os_x?

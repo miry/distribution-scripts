@@ -15,6 +15,7 @@ clean:
 	make -C darwin clean
 	rm -fr ~/tmp
 	rm -fr ~/.cache/crystal
+	rm -fr ~/.cache/shards
 
 # https://github.com/chef/omnibus
 .PHONY: setup
