@@ -22,7 +22,7 @@ base_dir '/Users/miry/tmp/local'
 # Alternatively you can tune the individual values
 # ------------------------------------------------
 # cache_dir     './local/omnibus/cache'
-# git_cache_dir './local/omnibus/cache/<install_path>'
+# git_cache_dir './local/omnibus/cache/{install_path}'
 # source_dir    './local/omnibus/src'
 # build_dir     './local/omnibus/build'
 # package_dir   './local/omnibus/pkg'

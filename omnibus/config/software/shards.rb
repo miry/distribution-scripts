@@ -82,22 +82,54 @@ env["CFLAGS"] << " -fPIC -arch arm64 -arch x86_64"
 env["CPPFLAGS"] = env["CPPFLAGS"].gsub("-arch arm64 -arch x86_64", "")
 
 build do
+  block { puts "\n=== Starting build phase for shards from #{Dir.pwd} ===\n\n" }
+  
   crflags = "--no-debug --release"
 
-  # Build for Intel
-  make "bin/shards SHARDS=false CRYSTAL=#{install_dir}/bin/crystal FLAGS='#{crflags}'", env: env
-  move "bin/shards", "bin/shards_x86_64"
+  # Build for x86_64
+  block { puts "\n===== 1. Building shards x86_64 version\n\n" }
+  crflags_x86_64 = crflags + " --cross-compile --target x86_64-apple-darwin"
+  make "bin/shards SHARDS=false CRYSTAL=#{install_dir}/bin/crystal FLAGS='#{crflags_x86_64}'", env: env
+  
+  output_bin_x86_64 = 'bin/shards_x86_64'
+  target_x86_64 = 'x86_64-apple-darwin'
+  command "clang bin/shards.o -o #{output_bin_x86_64} -target #{target_x86_64} -L#{install_dir}/embedded/lib -lyaml -lpcre2-8 -lgc -lpthread -levent -liconv -ldl", env: env
+  block "Testing the result file" do
+    puts "===== >>> Testing the result file #{output_bin_x86_64}"
+    raise "Could not build #{output_bin_x86_64}" unless File.exist?("#{output_bin_x86_64}")
+  end
+  # TODO: Add a validation of the output to check archs
+  command "file #{output_bin_x86_64}", env: env.dup
 
   # Clean
   make "clean", env: env
 
-  # Build for ARM64
-  crflags += " --cross-compile --target aarch64-apple-darwin"
-  make "bin/shards SHARDS=false CRYSTAL=#{install_dir}/bin/crystal FLAGS='#{crflags}'", env: env
-  command "clang bin/shards.o -o bin/shards_arm64 -target arm64-apple-darwin -L#{install_dir}/embedded/lib -lyaml -lpcre2-8 -lgc -lpthread -levent -liconv -ldl", env: env
+  # Build for arm64
+  block { puts "\n===== 2. Building shards arm64 version\n\n" }
+  crflags_arm = crflags + " --cross-compile --target aarch64-apple-darwin"
+  make "bin/shards SHARDS=false CRYSTAL=#{install_dir}/bin/crystal FLAGS='#{crflags_arm}'", env: env
+  output_bin_arm64 = 'bin/shards_arm64'
+  target_arm64 = 'arm64-apple-darwin'
+  command "clang bin/shards.o -o #{output_bin_arm64} -target #{target_arm64} -L#{install_dir}/embedded/lib -lyaml -lpcre2-8 -lgc -lpthread -levent -liconv -ldl", env: env
+  block "Testing the result file" do
+    puts "===== >>> Testing the result file #{output_bin_arm64}"
+    raise "Could not build #{output_bin_arm64}" unless File.exist?("#{output_bin_arm64}")
+  end
+  # TODO: Add a validation of the output to check archs
+  command "file #{output_bin_arm64}", env: env.dup
 
   # Lipo them up
-  command "lipo -create -output bin/shards bin/shards_x86_64 bin/shards_arm64"
+  block { puts "\n===== 3. Combine x86_64 and arm64 binaries in a single universal binary\n\n" }
+  output_bin = 'bin/shards'
+  command "lipo -create -output #{output_bin} #{output_bin_x86_64} #{output_bin_arm64}"
+  block "Testing the result file" do
+    puts "===== >>> Testing the result file #{output_bin}"
+    raise "Could not build #{output_bin}: #{output_bin}" unless File.exist?("#{output_bin}")
+  end
+  # TODO: Add a validation of the output to check archs
+  command "file #{output_bin}", env: env.dup
 
   copy "bin/shards", "#{install_dir}/embedded/bin/shards"
+  
+  block { puts "\n===< Shards successfully built\n\n" }
 end

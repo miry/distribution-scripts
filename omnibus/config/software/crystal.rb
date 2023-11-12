@@ -28,6 +28,8 @@ end
 
 output_path = "#{install_dir}/embedded/bin"
 output_bin = "#{output_path}/crystal"
+output_bin_x86_64 = "#{output_path}/crystal_x86_64"
+output_bin_arm = "#{output_path}/crystal_arm"
 
 path_env = "#{project_dir}/deps:#{env["PATH"]}"
 unless FIRST_RUN
@@ -44,17 +46,16 @@ else
 end
 
 build do
-  block { puts "\n=== Starting build phase for crystal from #{Dir.pwd} ===\n\n" }
+  block { puts "\n===> Starting build phase for crystal from #{Dir.pwd} ===\n\n" }
   command "echo '    Sources are located in #{project_dir}'", env: env.dup
 
   command "git checkout '#{CRYSTAL_SHA1}'", cwd: project_dir
 
-  block { puts "\n=== Build crystal deps in #{project_dir}\n\n" }
+  block { puts "\n===== 1. Build native crystal bin with embedded universal crystal binary\n\n" }
   mkdir "#{project_dir}/deps"
   make "deps", env: env.dup
   mkdir ".build"
 
-  block { puts "\n=== Build native crystal bin with embedded universal crystal binary\n\n" }
   copy "#{Dir.pwd}/crystal-#{ohai['os']}/embedded/bin/crystal", ".build/crystal"
   command ".build/crystal --version", env: env.dup
   command "file .build/crystal", env: env.dup
@@ -63,67 +64,74 @@ build do
   crflags = "--no-debug"
   command "make crystal stats=true release=true FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env.dup
   block "Testing the result file" do
-    puts "===> Testing the result file #{output_bin}"
+    puts "===== >>> Testing the result file #{output_bin}"
     raise "Could not build native crystal: #{output_bin}" unless File.exist?("#{output_bin}")
   end
+  # TODO: Add validation of command output
   command "file #{output_bin}", env: env.dup
 
-  block { puts "\n\n=== Restore compiler with cross-compile support ===\n\n" }
+  block { puts "\n===== 2. Restore compiler with cross-compile support\n\n" }
   # Restore compiler w/ cross-compile support
   move "#{output_bin}", ".build/crystal"
   command ".build/crystal --version", env: env.dup
-  
 
-  block { puts "\n\n=== Building x86_64 version ===\n\n" }
+  block { puts "\n===== 3. Building crystal x86_64 version\n\n" }
 
   original_CXXFLAGS_env = env["CXXFLAGS"].dup
   original_LDFLAGS_env = env["LDFLAGS"].dup
 
-  # x86_64 build
+  # Build for x86_64
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
   env["LDFLAGS"] = original_LDFLAGS_env + " -v -target x86_64-apple-darwin"
   env["LDLIBS"] = "-v -target x86_64-apple-darwin"
   make "deps", env: env.dup
 
   make "crystal verbose=true stats=true release=true target=x86_64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
-
-  command "clang #{output_path}/crystal.o -o #{output_bin}_x86_64 -target x86_64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
-  block { raise "Could not build crystal x86_64" unless File.exist?("#{output_bin}_x86_64") }
-  command "file #{output_bin}_x86_64", env: env
-  delete "#{output_path}/crystal.o"
-
-  # Restore x86_64 compiler w/ cross-compile support
-  mkdir ".build"
-  copy "#{output_bin}_x86_64", ".build/crystal"
+  command "clang #{output_path}/crystal.o -o #{output_bin_x86_64} -target x86_64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
+  
+  # Assertion
+  block { raise "Could not build #{output_bin_x86_64}" unless File.exist?(output_bin_x86_64) }
+  command "file #{output_bin_x86_64}", env: env
 
   # Clean up
+  delete "#{output_path}/crystal.o"
   make "clean_cache clean", env: env
 
-  block { puts "\n\n=== Building arm64 version ===\n\n" }
-  
+  # Build for arm64
+  block { puts "\n===== 4. Building crystal arm64 version\n\n" }
+
   # Compile for ARM64. Apple's clang only understands arm64, LLVM uses aarch64,
   # so we need to sub out aarch64 in our calls to Apple tools
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target arm64-apple-darwin"
   env["LDFLAGS"] = original_LDFLAGS_env + " -v -target arm64-apple-darwin"
   env["LDLIBS"] = "-v -target x86_64-apple-darwin"
   make "deps", env: env.dup
-
   make "crystal verbose=true stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
-
-  command "clang #{output_path}/crystal.o -o #{output_bin}_arm64 -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
-  block { raise "Could not build crystal arm64" unless File.exist?("#{output_bin}_arm64") }
-  command "file #{output_bin}_arm64", env: env
+  command "clang #{output_path}/crystal.o -o #{output_bin_arm} -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
+  
+  # Assertion
+  block { raise "Could not build #{output_bin_arm}" unless File.exist?(output_bin_arm) }
+  command "file #{output_bin_arm}", env: env
+  
+  # Clean up
   delete "#{output_path}/crystal.o"
 
   # Lipo them up
-  block { puts "\n\n=== Combine x86_64 and arm64 binaries in single universal binary ===\n\n" }
-  command "lipo -create -output #{output_bin} #{output_bin}_x86_64 #{output_bin}_arm64"
-  delete "#{output_bin}_x86_64"
-  delete "#{output_bin}_arm64"
+  block { puts "\n===== 5. Combine x86_64 and arm64 binaries in single crystal universal binary\n\n" }
+  command "lipo -create -output #{output_bin} #{output_bin_x86_64} #{output_bin_arm}"
 
   block do
-    raise "Could not build crystal" unless File.exist?(output_bin)
+    puts "===== >>> Testing the result file #{output_bin}"
+    raise "Could not build universal crystal #{output_bin}" unless File.exist?(output_bin)
+  end
+  # TODO: Add validation of command output
+  command "file #{output_bin}", env: env.dup
+  
+  # Clean up
+  delete output_bin_x86_64
+  delete output_bin_arm
 
+  block do
     if macos? || mac_os_x?
       otool_libs = `otool -L #{output_bin}`
       if otool_libs.include?("/usr/local/lib") || otool_libs.include?('/opt/homebrew/lib')
@@ -141,4 +149,6 @@ build do
       dest: "#{install_dir}/bin/crystal",
       mode: 0755,
       vars: { install_dir: install_dir }
+
+  block { puts "\n===< Crystal successfully built\n\n" }
 end
