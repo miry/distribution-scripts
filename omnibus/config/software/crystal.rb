@@ -86,7 +86,6 @@ build do
   # Build for x86_64
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target x86_64-apple-darwin"
   env["LDFLAGS"] = original_LDFLAGS_env + " -v -target x86_64-apple-darwin"
-  env["LDLIBS"] = "-v -target x86_64-apple-darwin"
   make "deps", env: env.dup
 
   make "crystal verbose=true stats=true release=true target=x86_64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=x86_64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
@@ -107,7 +106,6 @@ build do
   # so we need to sub out aarch64 in our calls to Apple tools
   env["CXXFLAGS"] = original_CXXFLAGS_env + " -target arm64-apple-darwin"
   env["LDFLAGS"] = original_LDFLAGS_env + " -v -target arm64-apple-darwin"
-  env["LDLIBS"] = "-v -target x86_64-apple-darwin"
   make "deps", env: env.dup
   make "crystal verbose=true stats=true release=true target=aarch64-apple-darwin FLAGS=\"#{crflags}\" CRYSTAL_CONFIG_TARGET=aarch64-apple-darwin CRYSTAL_CONFIG_LIBRARY_PATH= O=#{output_path}", env: env
   command "clang #{output_path}/crystal.o -o #{output_bin_arm} -target arm64-apple-darwin src/llvm/ext/llvm_ext.o `llvm-config --libs --system-libs --ldflags 2>/dev/null` -lstdc++ -lpcre2-8 -lgc -lpthread -levent -liconv -ldl -v", env: env
