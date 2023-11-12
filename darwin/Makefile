@@ -16,8 +16,7 @@ OUTPUT_DIR = build
 # mimics the tgz_package.rb version mangling
 DARWIN_ARCH = $(shell uname -m)
 DARWIN_PREFIX = crystal-$(CRYSTAL_VERSION)-$(PACKAGE_ITERATION)
-DARWIN_NAME = $(DARWIN_PREFIX)-darwin-$(DARWIN_ARCH).tar.gz
-DARWIN_NAME_UNIVERSAL = $(DARWIN_PREFIX)-darwin-universal.tar.gz
+DARWIN_NAME = $(DARWIN_PREFIX)-darwin-universal.tar.gz
 DARWIN_PKG_NAME = $(DARWIN_PREFIX).$(DARWIN_ARCH).pkg
 DARWIN_PKG_NAME_UNIVERSAL = $(DARWIN_PREFIX).universal.pkg
 
@@ -51,7 +50,7 @@ $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal:
 	&& rm /tmp/crystal-darwin.tar.gz \
 	&& chmod +x $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal
 
-$(OUTPUT_DIR)/$(DARWIN_NAME_UNIVERSAL) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL): ## Build omnibus crystal project
+$(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL): ## Build omnibus crystal project
 ifeq ($(FORCE_GIT_TAGGED), 0)
 	rm -Rf $(CURDIR)/tmp && mkdir -p $(CURDIR)/tmp && cd $(CURDIR)/tmp \
 	&& git clone "$(CRYSTAL_REPO)" \
@@ -67,7 +66,7 @@ endif
 	&& export SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 	&& bundle exec omnibus clean crystal shards \
 	&& bundle exec omnibus build crystal --log-level debug \
-	&& cp ./pkg/$(DARWIN_NAME_UNIVERSAL) $(CURDIR)/$(OUTPUT_DIR)/$(DARWIN_NAME_UNIVERSAL) \
+	&& cp ./pkg/$(DARWIN_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(DARWIN_NAME) \
 	&& cp ./pkg/$(DARWIN_PKG_NAME) $(CURDIR)/$(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL)
 
 .PHONY: clean
