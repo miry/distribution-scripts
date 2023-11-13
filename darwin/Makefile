@@ -55,7 +55,7 @@ ifeq ($(FORCE_GIT_TAGGED), 0)
 	rm -Rf $(CURDIR)/tmp && mkdir -p $(CURDIR)/tmp && cd $(CURDIR)/tmp \
 	&& git clone "$(CRYSTAL_REPO)" \
 	&& cd crystal \
-	&& git checkout $(CRYSTAL_SHA1) \
+	&& git checkout "$(CRYSTAL_SHA1)" \
 	&& git checkout -b $(CRYSTAL_VERSION)
 endif
 
