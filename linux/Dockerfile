@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM debian:11 AS debian
+FROM debian:11 AS debian
 
 RUN apt-get update \
  && apt-get install -y build-essential libevent-dev libpcre2-dev automake libtool pkg-config git curl llvm-13 clang-13 \
