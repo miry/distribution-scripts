@@ -17,7 +17,7 @@ build_dmg false
 #
 # Uncomment this line to change the default base directory to "local"
 # -------------------------------------------------------------------
-base_dir '/Users/miry/tmp/local'
+base_dir File.join(ENV.fetch('HOME'), '/tmp/omnibus')
 #
 # Alternatively you can tune the individual values
 # ------------------------------------------------

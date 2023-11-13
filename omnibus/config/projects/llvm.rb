@@ -2,7 +2,7 @@ name 'llvm'
 maintainer 'Juan Wajnerman'
 homepage 'http://llvm.org/'
 
-install_dir '/Users/miry/tmp/llvm'
+install_dir File.join(ENV.fetch('HOME'), '/tmp/llvm')
 build_version do
   source :version, from_dependency: 'llvm'
 end
