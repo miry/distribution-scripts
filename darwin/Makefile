@@ -41,14 +41,14 @@ help: ## Show this help
 awk 'BEGIN {FS = "## "}; /^## [a-zA-Z_-]/ {printf "  \033[36m%s\033[0m\n", $$2}; /^##  / {printf "  %s\n", $$2}'
 
 .PHONY: darwin-previous
-darwin-previous: $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal ## download previous crystal darwin release
+darwin-previous: $(CURDIR)/../omnibus/crystal-darwin-universal/embedded/bin/crystal ## download previous crystal darwin release
 
-$(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal:
+$(CURDIR)/../omnibus/crystal-darwin-universal/embedded/bin/crystal:
 	curl -L -o /tmp/crystal-darwin.tar.gz $(PREVIOUS_CRYSTAL_RELEASE_DARWIN_TARGZ) \
-	&& mkdir -p $(CURDIR)/../omnibus/crystal-darwin \
-	&& tar xfz /tmp/crystal-darwin.tar.gz -C $(CURDIR)/../omnibus/crystal-darwin --strip-components=1 \
+	&& mkdir -p $(CURDIR)/../omnibus/crystal-darwin-universal \
+	&& tar xfz /tmp/crystal-darwin.tar.gz -C $(CURDIR)/../omnibus/crystal-darwin-universal --strip-components=1 \
 	&& rm /tmp/crystal-darwin.tar.gz \
-	&& chmod +x $(CURDIR)/../omnibus/crystal-darwin/embedded/bin/crystal
+	&& chmod +x $(CURDIR)/../omnibus/crystal-darwin-universal/embedded/bin/crystal
 
 $(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL): ## Build omnibus crystal project
 ifeq ($(FORCE_GIT_TAGGED), 0)
@@ -75,6 +75,6 @@ clean: ## Clean up build directory
 	rm -Rf $(CURDIR)/tmp
 	rm -Rf $(CURDIR)/../omnibus/pkg/crystal-*
 	rm -Rf $(CURDIR)/../omnibus/pkg/version-*
-	rm -Rf $(CURDIR)/../omnibus/crystal-darwin*
+	rm -Rf $(CURDIR)/../omnibus/crystal-darwin-universal*
 	rm -Rf /var/cache/omnibus/*
 	rm -Rf /opt/crystal/*

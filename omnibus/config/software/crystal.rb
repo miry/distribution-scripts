@@ -56,7 +56,8 @@ build do
   make "deps", env: env.dup
   mkdir ".build"
 
-  copy "#{Dir.pwd}/crystal-#{ohai['os']}/embedded/bin/crystal", ".build/crystal"
+  block { raise "Could not find embedded/bin/crystal" unless File.exist?("#{Dir.pwd}/crystal-darwin-universal/embedded/bin/crystal") }
+  copy "#{Dir.pwd}/crystal-darwin-universal/embedded/bin/crystal", ".build/crystal"
   command ".build/crystal --version", env: env.dup
   command "file .build/crystal", env: env.dup
 
