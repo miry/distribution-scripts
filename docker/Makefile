@@ -33,9 +33,9 @@ ubuntu64: $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-ubuntu-x86_64.tar.gz
 ubuntu64: $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-ubuntu-x86_64-build.tar.gz
 
 .PHONY: alpine
-alpine: ## Build alpine x86_64 images
-alpine: $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-alpine-x86_64.tar.gz
-alpine: $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-alpine-x86_64-build.tar.gz
+alpine: ## Build alpine images
+alpine: $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-alpine.tar.gz
+alpine: $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-alpine-build.tar.gz
 
 $(BUILD_CONTEXT)/ubuntu64: ubuntu.Dockerfile $(BUILD_CONTEXT)/ubuntu64/crystal.tar.gz
 	cp ubuntu.Dockerfile $@/Dockerfile
@@ -54,14 +54,6 @@ $(BUILD_CONTEXT)/alpine: alpine.Dockerfile $(BUILD_CONTEXT)/alpine/crystal.tar.g
 
 $(OUTPUT_DIR):
 	mkdir -p $(OUTPUT_DIR)
-
-# .PHONY: docker-image
-# docker-image:
-# 	DOCKER_BUILDKIT=1 docker build -f Dockerfile -t opentracing-contrib/nginx-opentracing --target final .
-# 
-# .PHONY: docker-image-alpine
-# docker-image-alpine:
-# 	DOCKER_BUILDKIT=1 docker build -f Dockerfile -t opentracing-contrib/nginx-opentracing --target final --build-arg BUILD_OS=alpine .
 
 # Ubuntu x86_64
 $(OUTPUT_DIR)/docker-$(CRYSTAL_VERSION)-ubuntu-x86_64.tar.gz: $(BUILD_CONTEXT)/ubuntu64 $(OUTPUT_DIR)
