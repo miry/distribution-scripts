@@ -53,9 +53,9 @@ $(CURDIR)/../omnibus/crystal-darwin-universal/embedded/bin/crystal:
 $(OUTPUT_DIR)/$(DARWIN_NAME) $(OUTPUT_DIR)/$(DARWIN_PKG_NAME_UNIVERSAL): ## Build omnibus crystal project
 ifeq ($(FORCE_GIT_TAGGED), 0)
 	rm -Rf $(CURDIR)/tmp && mkdir -p $(CURDIR)/tmp && cd $(CURDIR)/tmp \
-	&& git clone "$(CRYSTAL_REPO)" \
+	&& git clone $(CRYSTAL_REPO) \
 	&& cd crystal \
-	&& git checkout "$(CRYSTAL_SHA1)" \
+	&& git checkout $(CRYSTAL_SHA1) \
 	&& git checkout -b $(CRYSTAL_VERSION)
 endif
 
